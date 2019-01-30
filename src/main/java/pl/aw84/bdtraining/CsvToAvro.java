@@ -2,52 +2,45 @@ package pl.aw84.bdtraining;
 
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
+import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.avro.io.DatumWriter;
 
-import java.io.*;
-import java.net.URI;
+import java.io.IOException;
 import java.util.List;
 
 class CsvToAvro {
     private final Schema schema;
-    private final String csvFilename;
-    private final String outputFilename;
-    private final FileSystem fs;
-    private final Configuration conf;
+    private final HdfsReader hdfsReader;
+    private final DataFileWriter<GenericRecord> dataFileWriter;
+    private final HdfsWriter hdfsWriter;
 
-    CsvToAvro(String csvFilename, String outputFilename, Schema schema) throws IOException {
-        this.csvFilename = csvFilename;
-        this.outputFilename = outputFilename;
+    CsvToAvro(String csvInputUri, String outputUri, Schema schema) throws IOException {
         this.schema = schema;
-        this.conf = new Configuration();
-        this.fs = FileSystem.get(URI.create(csvFilename), conf);
+
+        this.hdfsReader = new HdfsReader(csvInputUri);
+        DatumWriter<GenericRecord> datumWriter = new GenericDatumWriter<GenericRecord>(schema);
+        DataFileWriter<GenericRecord> dataFileWriter = new DataFileWriter<GenericRecord>(datumWriter);
+
+        this.hdfsWriter = new HdfsWriter(outputUri);
+
+        dataFileWriter.create(schema, this.hdfsWriter.getOutputStream());
+        this.dataFileWriter = dataFileWriter;
     }
 
-    private String readLine() throws IOException {
-        FSDataInputStream data_in = null;
-        Reader reader = null;
+    void convert() throws IOException {
+        String csvLine;
         try {
-            data_in = fs.open(new Path(csvFilename));
-            reader = new InputStreamReader(data_in, "UTF-8");
-            BufferedReader buf = new BufferedReader(reader);
-            String line;
-            while( (line = buf.readLine()) != null) {
-                GenericRecord record = getRecord(line);
+            while ((csvLine = hdfsReader.readLine()) != null) {
+                GenericRecord record = getRecord(csvLine);
+                dataFileWriter.append(record);
             }
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         } finally {
-            reader.close();
-            data_in.close();
+            hdfsReader.close();
+            hdfsWriter.close();
         }
-        return null;
     }
 
     private Object getField(String csvField, Schema.Field field) {
