@@ -48,6 +48,8 @@ class CsvToAvro {
             return Integer.valueOf(csvField);
         } else if (field.schema().getType() == Type.STRING) {
             return csvField;
+        } else if (field.schema().getType() == Type.DOUBLE) {
+            return Double.valueOf(csvField);
         }
         return null;
     }

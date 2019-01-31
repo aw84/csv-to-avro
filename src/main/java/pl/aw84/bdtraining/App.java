@@ -9,9 +9,8 @@ import java.io.IOException;
  */
 public class App {
     public static void main(String[] args) {
-        System.out.println("Hello World!");
-        String csvFilename = "train.csv";
-        String outputFilename = "train.avro";
+        String csvFilename = args[0];
+        String outputFilename = args[1];
         try {
             CsvToAvro csvToAvro = new CsvToAvro(csvFilename, outputFilename, new Entity().getSchema());
             csvToAvro.convert();
