@@ -10,22 +10,29 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 
-public class HdfsReader {
-    private final String uri;
-    private final Configuration conf;
-    private final FileSystem fs;
+
+/**
+ * Provides functionality of reading URI from HDFS on line-by-line basis
+ */
+
+class HdfsReader {
     private final FSDataInputStream data_in;
-    private final InputStreamReader reader;
     private final BufferedReader buf;
 
+    /**
+     * It's programmes responsibility to call {@link #close()} when done reading.
+     * Either successful or in case of failure or exception.
+     *
+     * @param uri URI pointing what to read
+     * @throws IOException
+     */
     HdfsReader(String uri) throws IOException {
-        this.uri = uri;
-        this.conf = new Configuration();
+        Configuration conf = new Configuration();
 
-        this.fs = FileSystem.get(URI.create(uri), conf);
+        FileSystem fs = FileSystem.get(URI.create(uri), conf);
         this.data_in = fs.open(new Path(uri));
 
-        this.reader = new InputStreamReader(data_in, "UTF-8");
+        InputStreamReader reader = new InputStreamReader(data_in, "UTF-8");
         this.buf = new BufferedReader(reader);
     }
 
