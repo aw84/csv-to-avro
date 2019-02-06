@@ -1,7 +1,6 @@
 package pl.aw84.bdtraining;
 
 import org.apache.avro.Schema;
-import org.apache.avro.Schema.Type;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericDatumWriter;
@@ -57,24 +56,6 @@ class CsvToAvro {
     }
 
     /**
-     * Creates object of Avro domain from CSV field according to field schema
-     *
-     * @param csvField Input data from CSV file
-     * @param field    Desired output Avro field
-     * @return Object of type defined in schema
-     */
-    private Object getField(String csvField, Schema.Field field) {
-        if (field.schema().getType() == Type.INT) {
-            return Integer.valueOf(csvField);
-        } else if (field.schema().getType() == Type.STRING) {
-            return csvField;
-        } else if (field.schema().getType() == Type.DOUBLE) {
-            return Double.valueOf(csvField);
-        }
-        throw new IllegalStateException("Unknown or unsupported field type");
-    }
-
-    /**
      * Creates {@link GenericRecord} using provided CSV input
      *
      * @param line One line from CSV file
@@ -84,7 +65,8 @@ class CsvToAvro {
         String[] csvFields = line.split(",");
         GenericRecord record = new GenericData.Record(schema);
         for (int i = 0; i < csvFields.length; i++) {
-            record.put(i, getField(csvFields[i], avroFields.get(i)));
+            Object field = new AvroFieldBuilder(csvFields[i], avroFields.get(i)).get();
+            record.put(i, field);
         }
         return record;
     }
